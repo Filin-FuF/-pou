@@ -6,182 +6,228 @@
     <title>Document</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body {
-    text-align: center;
-    font-family: Arial, sans-serif;
-}
-
-.game-board {
-    margin: 20px auto;
-    width: 600px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-}
-
-.card {
-    width: 120px;
-    height: 120px;
-    perspective: 1000px;
-}
-
-.card-inner {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    transform-style: preserve-3d;
-    transition: transform 0.6s;
-}
-
-.card.flipped .card-inner {
-    transform: rotateY(180deg);
-}
-
-.card-face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 40px;
-    backface-visibility: hidden;
-}
-
-.card-front {
-    background: #000000;
-}
-
-.card-back {
-    background: white;
-    transform: rotateY(180deg);
-}
-
-.matched {
-    opacity: 0.5;
-}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .card {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #253164 0%, #764ba2 100%);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.3s, opacity 0.3s;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        
+        .card:hover:not(.matched):not(.finished) {
+            transform: scale(1.05);
+        }
+        
+        .card .front, .card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            transition: transform 0.6s;
+        }
+        
+        .card .front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: rotateY(180deg);
+        }
+        
+        .card .back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transform: rotateY(0deg);
+        }
+        
+        .card.flipped .front {
+            transform: rotateY(0deg);
+        }
+        
+        .card.flipped .back {
+            transform: rotateY(-180deg);
+        }
+        
+        .card.matched {
+            opacity: 0.5;
+            cursor: default;
+        }
+        
+        .card.matched .front {
+            transform: rotateY(0deg);
+        }
+        
+        .card.matched .back {
+            transform: rotateY(-180deg);
+        }
+        
+        .card.finished {
+            cursor: default;
+        }
     </style>
 </head>
 <body>
-    <body>
-
-        <h1>Игра «Память»</h1>
-        <button id="controlBtn">Start</button>
+    <div class="container">
+        <h1>память игра</h1>
         
-        <div class="game-board"></div>
-        <script>
-            $(document).ready(function () {
+        <div class="controls">
+            <button id="startFinishBtn">Start</button>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+        
+        <div class="message" id="message"></div>
 
-const symbols = ["✡","✝","☪","☦","☢","☣","⚜","🕉"];
 
-let firstCard = null;
-let secondCard = null;
-let lockBoard = false;
-let gameStarted = false;
 
-function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
-}
 
-function createBoard() {
-    $(".game-board").empty();
 
-    const doubled = shuffle([...symbols, ...symbols]);
 
-    $.each(doubled, function (index, symbol) {
 
-        const card = $(`
-            <div class="card" data-symbol="${symbol}">
-                <div class="card-inner">
-                    <div class="card-face card-front"></div>
-                    <div class="card-face card-back">${symbol}</div>
-                </div>
-            </div>
-        `);
+    
+    <script>
+        $(document).ready(function() {
+            const icons = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊']; //невероятные элементы
+            let gameCards = [...icons, ...icons];
+            gameCards = gameCards.sort(() => Math.random() - 0.5);
+            let firstCard = null;        
+            let secondCard = null;       
+            let lockBoard = false;       
+            let matchedPairs = 0;        
+            let gameActive = false; 
 
-        $(".game-board").append(card);
-    });
-}
-
-function startGame() {
-    firstCard = null;
-    secondCard = null;
-    lockBoard = false;
-    gameStarted = true;
-
-    createBoard();
-
-    $("#controlBtn").text("Finish");
-}
-
-function finishGame() {
-
-    $(".card").addClass("flipped");
-    $(".card").off("click");
-
-    gameStarted = false;
-    $("#controlBtn").text("Start");
-}
-
-function resetTurn() {
-    firstCard = null;
-    secondCard = null;
-    lockBoard = false;
-}
-
-function checkWin() {
-    if ($(".matched").length === $(".card").length) {
-        setTimeout(function () {
-            alert("Игра завершена!");
+            const totalPairs = icons.length; //кол-во табличек
+            
+            function createBoard() {
+            
+             $('#gameBoard').empty(); //удаляем все элементы
+        
+            // перебираем все элементы массива 
+            $.each(gameCards, function(index, icon) {
+            //создание карты
+            const card = $('<div>').addClass('card');
+            //создание атрибута иконки для сравнения
+            card.attr('data-icon', icon);
+            //атрибут индекс
+            card.attr('data-index', index);
+            
+            const front = $('<div>').addClass('front').text(icon);
+            const back = $('<div>').addClass('back').text('?');
+            
+            // собираем карточку: добавляем front и back внутрь card
+            card.append(front, back);
+            
+            // добавляем готовую карточку в игровое поле
+            $('#gameBoard').append(card);
+        });
+    }
+    function resetGame() {
+        // перемешиваем карточки заново
+        gameCards = [...icons, ...icons].sort(() => Math.random() - 0.5);
+        firstCard = null;
+        secondCard = null;
+        lockBoard = false;
+        matchedPairs = 0;
+        gameActive = false;
+        createBoard();
+        $('.card').removeClass('flipped matched finished');
+        $('#message').hide().empty();
+        $('#startFinishBtn').text('Start');
+    }
+    function startGame() {
+        gameActive = true;
+        // переворачиваем все карточки рубашкой вверх
+        // убираем класс flipped у всех карточек
+        $('.card').removeClass('flipped');
+        $('.card').removeClass('finished');
+        firstCard = null;
+        secondCard = null;
+        lockBoard = false;
+        $('#startFinishBtn').text('Finish');
+    }
+    function finishGame() {
+        gameActive = false;
+        $('.card').addClass('flipped');
+        $('.card').addClass('finished');
+        $('#startFinishBtn').text('Start');
+    }
+    function checkMatch() {
+        const icon1 = $(firstCard).data('icon');
+        const icon2 = $(secondCard).data('icon');
+        if (icon1 === icon2) {
+            $(firstCard).addClass('matched');
+            $(secondCard).addClass('matched');
+            matchedPairs++;
+            if (matchedPairs === totalPairs) {
+                gameActive = false;
+                $('#message')
+                    .text('🎉 Поздравляем! Вы нашли все пары! 🎉')
+                    .show();
+                $('#startFinishBtn').text('Start');
+            }
+            firstCard = null;
+            secondCard = null;
+            lockBoard = false;
+        } else {
+            setTimeout(function() {
+                $(firstCard).removeClass('flipped');
+                $(secondCard).removeClass('flipped');
+                firstCard = null;
+                secondCard = null;
+                lockBoard = false;
+            }, 1000); // Задержка 1000 миллисекунд
+        }
+    }
+    //селектор 1
+    $('#startFinishBtn').on('click', function() {
+        const buttonText = $(this).text();
+        if (buttonText === 'Start') {
+            resetGame();
+            startGame();
+        } else {
             finishGame();
-        }, 500);
-    }
-}
-
-$(".game-board").on("click", ".card", function () {
-
-    if (!gameStarted) return;
-    if (lockBoard) return;
-    if ($(this).hasClass("flipped") || $(this).hasClass("matched")) return;
-
-    $(this).addClass("flipped");
-
-    if (!firstCard) {
-        firstCard = $(this);
-        return;
-    }
-
-    secondCard = $(this);
-    lockBoard = true;
-
-    if (firstCard.data("symbol") === secondCard.data("symbol")) {
-
-        firstCard.addClass("matched");
-        secondCard.addClass("matched");
-
-        resetTurn();
-        checkWin();
-
-    } else {
-
-        setTimeout(function () {
-            firstCard.removeClass("flipped");
-            secondCard.removeClass("flipped");
-            resetTurn();
-        }, 2000);
-    }
+        }
+    });
+    //селектор 2
+    $('#gameBoard').on('click', '.card', function() {
+        if (!gameActive || 
+            lockBoard || 
+            $(this).hasClass('flipped') || 
+            $(this).hasClass('matched') || 
+            $(this).hasClass('finished')) {
+            return; 
+        }
+        if (firstCard === null) {
+            $(this).addClass('flipped');
+            firstCard = this;
+        } 
+        else if (secondCard === null && this !== firstCard) {
+            $(this).addClass('flipped');
+            secondCard = this;
+            lockBoard = true;
+            checkMatch();
+        }
+    });
+    createBoard();
 });
 
-$("#controlBtn").click(function () {
-    if (!gameStarted) {
-        startGame();
-    } else {
-        finishGame();
-    }
-});
 
-});
-        </script>
+
+        
+    </script>
 </body>
 </html>
