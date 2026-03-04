@@ -6,20 +6,22 @@
     <title>Document</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        /* 0. исправить чтобы все помещалось на экран
-        1. добавить снизу рубашку карт
-        2. добавить золотую карту, при выпадении ее открывается ее пара */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        /* 0. исправить чтобы все помещалось на экран
+        1. добавить снизу рубашку карт
+        2. добавить золотую карту, при выпадении ее открывается ее пара */
         .game-board {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
             margin-top: 20px;
+            width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .card {
@@ -28,6 +30,7 @@
             border-radius: 10px;
             cursor: pointer;
             position: relative;
+            
         }
         
         .card .front, .card .back {
@@ -239,4 +242,3 @@
     </script>
 </body>
 </html>
-
