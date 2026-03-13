@@ -23,7 +23,6 @@
             margin-left: auto;
             margin-right: auto;
         }
-        
         .card {
             aspect-ratio: 1;
             background: #2196F3; 
@@ -50,11 +49,13 @@
         }
         
         .card .back {
-            background: #2196F3;
-            color: white;
-            font-size: 30px;
-            font-weight: bold;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-size: 30px;
+        font-weight: bold;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
         }
+
         
         .card.flipped .front {
             display: flex;
@@ -89,6 +90,17 @@
         .card.finished .back {
             display: none;
         }
+        
+        .card.golden .back {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
+        box-shadow: inset 0 0 20px rgba(255,215,0,0.5), 0 0 15px rgba(255,215,0,0.7);
+        }
+
+        .card.golden.matched .front {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
+        box-shadow: 0 0 15px rgba(255,215,0,0.7);
+        }
+
     </style>
 </head>
 <body>
@@ -120,32 +132,34 @@
             let lockBoard = false;       
             let matchedPairs = 0;        
             let gameActive = false; 
+            let goldenCard = null;
 
             const totalPairs = icons.length; //кол-во табличек
             
             function createBoard() {
             
              $('#gameBoard').empty(); //удаляем все элементы
-        
-            // перебираем все элементы массива 
-            $.each(gameCards, function(index, icon) {
-            //создание карты
-            const card = $('<div>').addClass('card');
-            //создание атрибута иконки для сравнения
-            card.attr('data-icon', icon);
-            //атрибут индекс
-            card.attr('data-index', index);
             
+             const goldenIndex = Math.floor(Math.random() * icons.length);
+    
+            $.each(gameCards, function(index, icon) {
+            const card = $('<div>').addClass('card');
+            card.attr('data-icon', icon);
+            card.attr('data-index', index);
+        
+            // Делаем золотую карту
+            if (index === goldenIndex || index === goldenIndex + icons.length) {
+            card.addClass('golden');
+            goldenCard = card[0]; // сохраняем ссылку
+            }
+        
             const front = $('<div>').addClass('front').text(icon);
             const back = $('<div>').addClass('back').text('?');
-            
-            // собираем карточку: добавляем front и back внутрь card
+        
             card.append(front, back);
-            
-            // добавляем готовую карточку в игровое поле
             $('#gameBoard').append(card);
         });
-    }
+        }
     function resetGame() {
         // перемешиваем карточки заново
         gameCards = [...icons, ...icons].sort(() => Math.random() - 0.5);
@@ -215,24 +229,37 @@
     });
     //селектор 2
     $('#gameBoard').on('click', '.card', function() {
-        if (!gameActive || 
-            lockBoard || 
-            $(this).hasClass('flipped') || 
-            $(this).hasClass('matched') || 
-            $(this).hasClass('finished')) {
-            return; 
-        }
-        if (firstCard === null) {
-            $(this).addClass('flipped');
-            firstCard = this;
-        } 
-        else if (secondCard === null && this !== firstCard) {
-            $(this).addClass('flipped');
-            secondCard = this;
+    if (!gameActive || lockBoard || $(this).hasClass('flipped') || 
+        $(this).hasClass('matched') || $(this).hasClass('finished')) {
+        return; 
+    }
+    
+    // ЗОЛОТАЯ КАРТА
+    if ($(this).hasClass('golden') && goldenCard) {
+        $(this).addClass('flipped');
+        const pair = $(goldenCard).hasClass('flipped') ? $(this) : $(goldenCard);
+        setTimeout(() => {
+            $(pair).addClass('flipped');
+            //проверка совпадения
+            firstCard = goldenCard;
+            secondCard = pair[0];
             lockBoard = true;
             checkMatch();
-        }
-    });
+        }, 300);
+        return;
+    }
+    
+    if (firstCard === null) {
+        $(this).addClass('flipped');
+        firstCard = this;
+    } else if (secondCard === null && this !== firstCard) {
+        $(this).addClass('flipped');
+        secondCard = this;
+        lockBoard = true;
+        checkMatch();
+    }
+});
+
     createBoard();
 });
 
